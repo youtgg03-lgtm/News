@@ -1,0 +1,6 @@
+{
+  "name": "Gold Terminal",
+  "description": "High-frequency algorithmic trading terminal and real-time market intelligence platform for XAUUSD and multi-asset derivatives.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
