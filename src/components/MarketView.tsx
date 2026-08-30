@@ -29,6 +29,7 @@ import {
   X
 } from 'lucide-react';
 import { CandleChart } from './CandleChart';
+import { TradingViewWidget } from './TradingViewWidget';
 import {
   AssetQuote,
   Candle,
@@ -83,6 +84,7 @@ export const MarketView: React.FC<MarketViewProps> = ({
   dryRun
 }) => {
   // Chart Display Overlays
+  const [showTradingView, setShowTradingView] = useState<boolean>(false);
   const [showEmaRibbons, setShowEmaRibbons] = useState<boolean>(true);
   const [showBollinger, setShowBollinger] = useState<boolean>(false);
   const [showPivots, setShowPivots] = useState<boolean>(true);
@@ -235,6 +237,21 @@ export const MarketView: React.FC<MarketViewProps> = ({
 
         {/* High-Fidelity Real-Time Moving Candlestick Chart */}
         <div className="flex-1 flex flex-col min-h-[360px] relative overflow-hidden">
+          {!showTradingView && (
+            <button
+              onClick={() => setShowTradingView(true)}
+              className="absolute top-2 right-2 z-30 text-[10px] font-mono px-2.5 py-1 rounded bg-[#171B22] border border-[#232830] text-[#7C8592] hover:text-[#e2e2e8] hover:border-[#eac169]/40"
+              title="Open the real, official TradingView chart for this symbol"
+            >
+              View on TradingView
+            </button>
+          )}
+          {showTradingView && (
+            <TradingViewWidget
+              symbol={quote.symbol === 'XAUUSD' ? 'OANDA:XAUUSD' : quote.symbol === 'BTCUSD' ? 'BINANCE:BTCUSDT' : quote.symbol}
+              onClose={() => setShowTradingView(false)}
+            />
+          )}
           <CandleChart
             quote={quote}
             candles={candles}
