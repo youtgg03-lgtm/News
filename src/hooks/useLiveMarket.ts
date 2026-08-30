@@ -67,6 +67,8 @@ export function useLiveMarket({
   // Reference for last candle timestamp
   const currentCandleStartRef = useRef<number>(Date.now());
   const lastAutoTradeTimeRef = useRef<number>(0);
+  const goldOpenRef = useRef<number | null>(null);
+  const goldConnectedRef = useRef<boolean>(false);
 
   // Current active quote & candles
   const currentQuote = assets[currentSymbol] || assets.XAUUSD;
@@ -142,6 +144,69 @@ export function useLiveMarket({
     };
   }, [onAddLog]);
 
+  // Real Gold Spot Price Feed (gold-api.com — free, no key, CORS-open)
+  // This replaces the old Math.random() walk for XAUUSD with an actual
+  // market-moving price. Polled every 4s since it's a REST endpoint, not
+  // a websocket; that's still far more "real" than synthetic noise.
+  useEffect(() => {
+    let cancelled = false;
+    let poll: any = null;
+
+    const fetchGoldPrice = async () => {
+      try {
+        const res = await fetch('https://api.gold-api.com/price/XAU');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const price = parseFloat(data.price);
+        if (cancelled || !price || Number.isNaN(price)) return;
+
+        if (goldOpenRef.current === null) {
+          goldOpenRef.current = price;
+        }
+        if (!goldConnectedRef.current) {
+          goldConnectedRef.current = true;
+          onAddLog('SYS', 'Real Gold API connected: live XAUUSD spot price active (gold-api.com).');
+        }
+
+        setAssets(prev => {
+          const gold = prev.XAUUSD;
+          if (!gold) return prev;
+          const open = goldOpenRef.current ?? price;
+          const change = parseFloat((price - open).toFixed(2));
+          const changePct = parseFloat(((change / open) * 100).toFixed(2));
+          return {
+            ...prev,
+            XAUUSD: {
+              ...gold,
+              price,
+              open,
+              change,
+              changePct,
+              high: Math.max(gold.high, price),
+              low: gold.low === 0 ? price : Math.min(gold.low, price),
+              close: price
+            }
+          };
+        });
+      } catch (e) {
+        // Network blocked or API briefly down -- keep last known real price
+        // rather than silently falling back to fake data.
+        if (!cancelled && goldConnectedRef.current) {
+          onAddLog('WARN', 'Gold API feed temporarily unreachable, holding last known price.');
+          goldConnectedRef.current = false;
+        }
+      }
+    };
+
+    fetchGoldPrice(); // immediate first fetch, don't wait for the interval
+    poll = setInterval(fetchGoldPrice, 4000);
+
+    return () => {
+      cancelled = true;
+      if (poll) clearInterval(poll);
+    };
+  }, [onAddLog]);
+
   // High Frequency Live Tick Loop & Candlestick Builder
   useEffect(() => {
     if (!isLiveStreaming) return;
@@ -160,6 +225,12 @@ export function useLiveMarket({
           const item = next[sym];
           // Skip if BTC has active WS unless offline
           if (sym === 'BTCUSD' && Math.random() > 0.4) {
+            return;
+          }
+          // XAUUSD is driven entirely by the real gold-api.com feed above --
+          // never overwrite it with synthetic noise.
+          if (sym === 'XAUUSD') {
+            if (sym === currentSymbol) newCalculatedPrice = item.price;
             return;
           }
 
