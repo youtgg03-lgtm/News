@@ -13,24 +13,27 @@ import {
 
 export const INITIAL_ASSETS: Record<string, AssetQuote> = {
   XAUUSD: {
+    // Placeholder only -- overwritten within ~1s by the real gold-api.com
+    // feed in useLiveMarket.ts. Kept in a realistic ballpark so there's no
+    // jarring jump on first paint if the fetch is briefly delayed.
     symbol: 'XAUUSD',
     name: 'Gold / US Dollar',
     category: 'Futures',
-    price: 2342.10,
-    open: 2329.65,
-    high: 2345.20,
-    low: 2325.10,
-    close: 2342.10,
-    change: 12.45,
-    changePct: 0.53,
+    price: 4450.00,
+    open: 4450.00,
+    high: 4450.00,
+    low: 4450.00,
+    close: 4450.00,
+    change: 0,
+    changePct: 0,
     volume: '1.2M',
     spread: 2.1,
     pivots: {
-      r2: 2350.00,
-      r1: 2345.00,
-      pp: 2340.00,
-      s1: 2335.00,
-      s2: 2330.00,
+      r2: 4480.00,
+      r1: 4465.00,
+      pp: 4450.00,
+      s1: 4435.00,
+      s2: 4420.00,
     }
   },
   BTCUSD: {
